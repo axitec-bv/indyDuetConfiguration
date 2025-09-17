@@ -49,8 +49,7 @@ M308 S0 P"temp0" Y"thermistor" A"Heated Bed" T100000 B4725 C7.06e-8 ; Bed sensor
 M308 S1 P"1.temp0" Y"pt1000" A"Bandheater" W2 F50     ; configure sensor #1
 M308 S2 P"1.temp1" Y"pt1000" A"Nozzle" W2 F50 ; configure sensor #2
 M308 S3 P"1.temp2" Y"pt1000" A"Inlet"              ; configure sensor #3
-
-;M308 S7 P"1.io5.in" Y"linear-analog" A"Feeder" ; configure hopper sensor
+M308 S7 P"1.io2.in" Y"linear-analog" A"Feeder" ; configure hopper sensor
 
 
 ; Heaters
