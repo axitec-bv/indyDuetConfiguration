@@ -9,7 +9,6 @@ M553 P255.255.255.0  ; Subnet mask
 
 ; Wait a moment for the CAN expansion boards to become available
 G4 S2
- 
 
 ; Closed-Loop Drivers
 M569.1 P70.0 T3 E5:9 R100 I0 D0 ; driver 70.0 has a magnetic encoder
@@ -18,16 +17,17 @@ M569.1 P72.0 T3 E5:9 R100 I0 D0 ; driver 72.0 has a magnetic encoder
 M569.1 P73.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
 M569.1 P74.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
 M569.1 P75.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
-M569 P1.0 S1 D2 ; simple stepper motor on expansion board 1 driver 0
-
 
 ; Smart Drivers
 M569 P70.0 S0 D5 ; driver 70.0 goes backwards (X axis)
-M569 P71.0 S0 D5 ; driver 71.0 goes forwards (Y axis)
+M569 P71.0 S0 D5 ; driver 71.0 goes backwards (Y axis)
 M569 P72.0 S0 D5 ; driver 72.0 goes backwards (Z axis)
 M569 P73.0 S0 D5 ; driver 73.0 goes backwards (Z axis)
 M569 P74.0 S0 D5 ; driver 74.0 goes backwards (Z axis)
 M569 P75.0 S0 D5 ; driver 73.0 goes backwards (Z axis)
+
+; Simple Drivers
+M569 P1.0 S1 D3  ; driver 1.0 goes forwards (E axis)
 
 ; Motor Idle Current Reduction
 M906 I30 ; set motor current idle factor
