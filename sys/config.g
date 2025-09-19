@@ -18,7 +18,7 @@ M569.1 P72.0 T3 E5:9 R100 I0 D0 ; driver 72.0 has a magnetic encoder
 M569.1 P73.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
 M569.1 P74.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
 M569.1 P75.0 T3 E2:4 R100 I0 D0 ; driver 73.0 has a magnetic encoder
-M569 P1.0 S0 D2 ; simple stepper motor on expansion board 1 driver 0
+M569 P1.0 S1 D2 ; simple stepper motor on expansion board 1 driver 0
 
 
 ; Smart Drivers
