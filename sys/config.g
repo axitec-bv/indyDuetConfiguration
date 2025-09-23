@@ -38,7 +38,7 @@ M584 X71.0 Y70.0 Z72.0:73.0:74.0:75.0 E1.0; map extruder to new stepper driver
 M350 X16 Y16 Z16 E16 I1
 M906 X3500 Y3500 Z2500 E4000
 M92 X32.41 Y32.61 Z1600 E420; configure steps per mm
-M208 X0:550 Y0:550 Z0:500 ; set minimum and maximum axis limits
+M208 X0:520 Y0:520 Z0:475 ; set minimum and maximum axis limits
 
 M566 X2000 Y2000 Z20 E1000; set maximum instantaneous speed changes (mm/min)
 M203 X8000 Y8000 Z250 E16000; set maximum speeds (mm/min)
@@ -71,6 +71,9 @@ M106 P0 C"Tool" S0 L0 X1 B0.1 ; configure fan #0
 
 ; Heated beds
 M140 P0 H0                        ; configure heated bed
+
+; Cold extrusion/retract safety
+M302 S160 R160   
 
 ; Kinematics
 M669 X1:-1:0 Y-1:-1:0 K1
