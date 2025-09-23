@@ -71,7 +71,6 @@ M106 P0 C"Tool" S0 L0 X1 B0.1 ; configure fan #0
 
 ; Heated beds
 M140 P0 H0                        ; configure heated bed
-M143 H0 S100                       ; set temperature limit for heater 0 
 
 ; Kinematics
 M669 X1:-1:0 Y-1:-1:0 K1
