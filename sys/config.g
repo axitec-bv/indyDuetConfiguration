@@ -24,7 +24,7 @@ M569 P71.0 S0 D5 ; driver 71.0 goes backwards (Y axis)
 M569 P72.0 S0 D5 ; driver 72.0 goes backwards (Z axis)
 M569 P73.0 S0 D5 ; driver 73.0 goes backwards (Z axis)
 M569 P74.0 S0 D5 ; driver 74.0 goes backwards (Z axis)
-M569 P75.0 S0 D5 ; driver 73.0 goes backwards (Z axis)
+M569 P75.0 S0 D5 ; driver 75.0 goes backwards (Z axis)
 
 ; Simple Drivers
 M569 P1.0 S1 D3  ; driver 1.0 goes forwards (E axis)
@@ -54,7 +54,7 @@ M308 S7 P"1.io2.in" Y"linear-analog" A"Feeder" ; configure hopper sensor
 
 ; Heaters
 M950 H0 C"out1" T0                ; create bed heater
-M143 H0 P0 T0 C0 S140 A0          ; configure heater monitor #0 for bed heater
+M143 H0 P0 T0 C0 S100 A0          ; configure heater monitor #0 for bed heater
 M307 H0 R0.2 D5.5 E1.35 K0.56 B1  ; configure model of bed heater
 
 M950 H2 C"1.out7" T2              ; create heater #2
