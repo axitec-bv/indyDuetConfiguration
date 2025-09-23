@@ -78,6 +78,9 @@ M302 S160 R160
 ; Kinematics
 M669 X1:-1:0 Y-1:-1:0 K1
 
+; Motion safety
+M564 S1 H1           ; alleen bewegen binnen volume en pas ná homing
+
 ; Endstops
 M574 X1 P"!io0.in" S1 ; configure X axis endstop
 M574 Y1 P"!io2.in" S1 ; configure Y axis endstop
