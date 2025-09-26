@@ -2,7 +2,7 @@
 ; General
 G90 ; absolute coordinates
 M83 ; relative extruder moves
-M550 P"Indyprinter3" ; set hostname
+M550 P"IndyprinterXXX" ; set hostname
  
 M552 S1 P192.168.100.100
 M553 P255.255.255.0  ; Subnet mask
