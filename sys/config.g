@@ -40,7 +40,7 @@ M906 X3500 Y3500 Z2500 E4000
 M92 X32.41 Y32.61 Z1600 E420; configure steps per mm
 M208 X0:520 Y0:520 Z0:475 ; set minimum and maximum axis limits
 
-M566 X2000 Y2000 Z20 E1000; set maximum instantaneous speed changes (mm/min)
+M566 X750 Y750 Z20 E1150; set maximum instantaneous speed changes (mm/min)
 M203 X8000 Y8000 Z250 E16000; set maximum speeds (mm/min)
 M201 X750 Y750 Z20 E1000; set accelerations (mm/s^2)
 
