@@ -57,11 +57,11 @@ M950 H0 C"out1" T0                ; create bed heater
 M143 H0 P0 T0 C0 S100 A0          ; configure heater monitor #0 for bed heater
 M307 H0 R0.2 D5.5 E1.35 K0.56 B1  ; configure model of bed heater
 
-M950 H2 C"1.out7" T2 Q20             ; create heater #2
+M950 H2 C"1.out7" T2 Q200             ; create heater #2
 M143 H2 P0 T1 C0 S285 A0          ; configure heater monitor #0 for heater #2
 M307 H2 R1.21 K0.239:0.000 D9.06 E1.35 S1.00 B0 ; configure model of heater #2
 
-M950 H1 C"1.out6" T1 Q20             ; create heater #1
+M950 H1 C"1.out6" T1 Q200             ; create heater #1
 M143 H1 P0 T1 C0 S285 A0          ; configure heater monitor #0 for heater #1
 M307 H1 R1.21 K0.589:0.000 D8.87 E1.35 S1.00 B0 ; configure model of heater #1
 
