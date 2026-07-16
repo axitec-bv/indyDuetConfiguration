@@ -1,0 +1,23 @@
+Indy Duet SD bring-up
+=====================
+
+Use a factory Duet SD card. The script keeps firmware/ and www/, then
+installs this repo's sys/ and macros/, and sets the printer hostname.
+Every printer uses the same IP (192.168.100.100) behind its own router.
+
+1. Insert the factory SD card (usually mounts as /Volumes/NO_LABEL).
+2. From this repo:
+
+     ./bringup-sd.sh --name Indyprinter01 --eject
+
+3. Put the card in the printer and power on.
+4. Open http://192.168.100.100/ in a browser.
+
+Optional flags:
+  --old-machine   Use config_old_machine.g instead of config.g
+  --volume PATH   SD mount path if auto-detect fails
+  --dry-run       Preview without writing
+  --help          Full usage
+
+Note: the first daemon.g hot-swap deploy still needs one reboot after
+the first boot; later updates can apply without reboot.
