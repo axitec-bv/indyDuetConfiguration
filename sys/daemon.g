@@ -1,5 +1,12 @@
-; Test loop for temperature and pump control
-while true
+; daemon.g
+; Self-restarting daemon (RRF 3.5+). config-sync hot-swaps this file by renaming the running
+; copy to daemon.g.bak before uploading a new version. The loop below exits as soon as that
+; .bak appears, letting RRF load the new daemon.g, which deletes the leftover .bak on startup.
+; (First deploy of this version still needs one reboot; after that updates apply without reboot.)
+if fileexists("/sys/daemon.g.bak")
+    M472 P"/sys/daemon.g.bak"  ; remove leftover backup so this instance keeps running
+
+while !fileexists("/sys/daemon.g.bak")
 
     ; --- Water temperature control ---
     if exists(sensors.analog[3])
