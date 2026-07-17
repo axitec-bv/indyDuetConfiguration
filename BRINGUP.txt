@@ -12,6 +12,9 @@ Every printer uses the same IP (192.168.100.100) behind its own router.
 
 3. Put the card in the printer and power on.
 4. Open http://192.168.100.100/ in a browser.
+   DWC defaults to English via sys/dwc-defaults.json (first visit / after
+   settings reset). If the UI is still in another language, clear site data
+   for that IP or use Settings > General > Appearance.
 
 Optional flags:
   --old-machine   Use config_old_machine.g instead of config.g

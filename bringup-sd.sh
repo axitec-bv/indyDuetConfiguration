@@ -140,6 +140,7 @@ echo "  ip:       $IP"
 echo "  subnet:   $SUBNET"
 echo "  profile:  $PROFILE"
 echo "  source:   $CONFIG_SRC"
+echo "  dwc:      English (sys/dwc-defaults.json)"
 [[ "$DRY_RUN" -eq 1 ]] && echo "  mode:     dry-run"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
