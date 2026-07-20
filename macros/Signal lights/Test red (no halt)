@@ -1,4 +1,4 @@
-; Safe light test — does not halt the machine.
-; Daemon must keep flashing until Restore green (idle would otherwise clear it).
+; Safe fault-light test — does not halt the machine.
+; Expect solid red (machine unavailable) until Restore green.
 M98 P"/sys/signal-fault.g"
-M118 P0 L2 S"Signal light test: red should FLASH. Run Restore green when done."
+M118 P0 L2 S"Fault test: solid red. Run Restore green when done."

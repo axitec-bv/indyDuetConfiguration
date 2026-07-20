@@ -1,0 +1,11 @@
+; Acknowledge finished print (product removed) → back to solid green standby.
+if !exists(global.printFinished)
+    global printFinished = false
+if !exists(global.wasPrinting)
+    global wasPrinting = false
+
+set global.printFinished = false
+set global.wasPrinting = false
+M42 P2 S1
+M42 P4 S0
+M118 P0 L2 S"Product removed — standby (solid green)"

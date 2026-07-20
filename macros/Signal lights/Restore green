@@ -1,10 +1,14 @@
-; Clear forced fault indication; daemon will show flash-green when idle.
+; Clear fault + "print finished" → solid green standby (ready to print).
 if !exists(global.signalForceFault)
     global signalForceFault = false
-if !exists(global.signalFlashOn)
-    global signalFlashOn = false
+if !exists(global.printFinished)
+    global printFinished = false
+if !exists(global.wasPrinting)
+    global wasPrinting = false
 
 set global.signalForceFault = false
-set global.signalFlashOn = false
+set global.printFinished = false
+set global.wasPrinting = false
+M42 P2 S1
 M42 P4 S0
-M118 P0 L2 S"Fault cleared; idle = flashing green, printing = solid green"
+M118 P0 L2 S"Standby: solid green. Printing=1Hz green, finished=0.5Hz green, fault=solid red, pause=1Hz red"
