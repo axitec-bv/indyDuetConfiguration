@@ -1,0 +1,10 @@
+; Clear forced fault indication; daemon will show flash-green when idle.
+if !exists(global.signalForceFault)
+    global signalForceFault = false
+if !exists(global.signalFlashOn)
+    global signalFlashOn = false
+
+set global.signalForceFault = false
+set global.signalFlashOn = false
+M42 P4 S0
+M118 P0 L2 S"Fault cleared; idle = flashing green, printing = solid green"

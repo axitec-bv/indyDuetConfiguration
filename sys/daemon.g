@@ -31,15 +31,37 @@ while !fileexists("/sys/daemon.g.bak")
         M42 P3 S0  ; Fail-safe off
 
     ; --- Signal lights (P2/out8 = SL_G green, P4/out9 = SL_R red) ---
-    ; Green: idle/ready or actively running a job
-    ; Red:   halted, or paused (needs operator attention)
-    if state.status == "halted" || state.status == "paused" || state.status == "pausing"
-        M42 P2 S0  ; green off
-        M42 P4 S1  ; red on
-    elif state.status == "processing" || state.status == "resuming" || state.status == "busy" || state.status == "idle"
-        M42 P2 S1  ; green on
-        M42 P4 S0  ; red off
+    ; Flash red:  fault (signalForceFault) or paused
+    ; Solid green: printing / running and OK
+    ; Flash green: idle / standby (ready for a job)
+    if !exists(global.signalForceFault)
+        global signalForceFault = false
+    if !exists(global.signalFlashOn)
+        global signalFlashOn = false
+
+    if global.signalForceFault || state.status == "paused" || state.status == "pausing"
+        ; Flash red (~2.5 Hz with G4 S0.2)
+        set global.signalFlashOn = !global.signalFlashOn
+        M42 P2 S0
+        if global.signalFlashOn
+            M42 P4 S1
+        else
+            M42 P4 S0
+    elif state.status == "processing" || state.status == "resuming" || state.status == "busy"
+        ; Solid green while job is running
+        set global.signalFlashOn = false
+        M42 P2 S1
+        M42 P4 S0
+    elif state.status == "idle"
+        ; Flash green = ready / standby
+        set global.signalFlashOn = !global.signalFlashOn
+        M42 P4 S0
+        if global.signalFlashOn
+            M42 P2 S1
+        else
+            M42 P2 S0
     else
+        set global.signalFlashOn = false
         M42 P2 S0
         M42 P4 S0
 

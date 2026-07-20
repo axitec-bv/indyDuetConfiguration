@@ -22,6 +22,7 @@
 
 if state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming"
     M291 R"CAN communication lost" P{"Expansion board (CAN address " ^ param.B ^ ") stopped responding during a job. Printer halted - reset required. " ^ param.S}
+    M98 P"/sys/signal-fault.g"  ; latch red before halt (daemon will stop)
     M112 ; emergency stop: turns off all heaters and motors and halts the print
 else
     ; Idle / bring-up / board readdress: do not halt the machine

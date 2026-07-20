@@ -99,6 +99,8 @@ M950 P4 C"out9" ; SL_R signal light red
 
 global waterTemp = 60
 global pelletFeeding = false
+global signalForceFault = false
+global signalFlashOn = false
 
 ; Signal lights: green = ready at boot, red off
 M42 P2 S1
