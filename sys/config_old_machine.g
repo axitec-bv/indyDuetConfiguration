@@ -94,12 +94,16 @@ M568 P0 R0 S0      ; set initial tool #0 active and standby temperatures to 0C
 ; Pins
 M950 P0 C"out2"
 M950 P1 C"out7"
-M950 P2 C"out8"
+M950 P2 C"out8" ; SL_G signal light green
 M950 P3 C"out3"
-
+M950 P4 C"out9" ; SL_R signal light red
 
 global waterTemp = 60
 global pelletFeeding = false
 
+; Signal lights: green = ready at boot, red off
+M42 P2 S1
+M42 P4 S0
+
 ; Miscellaneous
-T0 ; select first too25
+T0 ; select first tool

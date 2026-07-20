@@ -30,4 +30,17 @@ while !fileexists("/sys/daemon.g.bak")
         ; M118 P0 L2 S{"Analog[7] not present - skipping feeder control"}
         M42 P3 S0  ; Fail-safe off
 
+    ; --- Signal lights (P2/out8 = SL_G green, P4/out9 = SL_R red) ---
+    ; Green: idle/ready or actively running a job
+    ; Red:   halted, or paused (needs operator attention)
+    if state.status == "halted" || state.status == "paused" || state.status == "pausing"
+        M42 P2 S0  ; green off
+        M42 P4 S1  ; red on
+    elif state.status == "processing" || state.status == "resuming" || state.status == "busy" || state.status == "idle"
+        M42 P2 S1  ; green on
+        M42 P4 S0  ; red off
+    else
+        M42 P2 S0
+        M42 P4 S0
+
     G4 S0.2   ; Small delay to prevent overloading
