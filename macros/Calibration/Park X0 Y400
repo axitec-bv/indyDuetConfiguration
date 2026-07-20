@@ -1,0 +1,9 @@
+; Park at X0 Y400 (absolute) — room to move +X and +/-Y for calibration.
+if !move.axes[0].homed || !move.axes[1].homed
+    abort "Home X and Y first (G28)"
+
+echo "Moving to X0 Y400..."
+G90
+G1 X0 Y400 F6000
+M400
+echo "At X0 Y400 — good start for NE/SE calibration moves"

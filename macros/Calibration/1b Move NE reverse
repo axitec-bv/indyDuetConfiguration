@@ -1,0 +1,15 @@
+; Undo / opposite of NE: move X-100 Y-100 (relative).
+if !move.axes[0].homed || !move.axes[1].homed
+    abort "Home X and Y first (G28)"
+
+if !exists(global.calMoveXy)
+    global calMoveXy = 100
+if global.calMoveXy <= 0
+    set global.calMoveXy = 100
+
+echo {"Moving reverse-NE (X-" ^ global.calMoveXy ^ " Y-" ^ global.calMoveXy ^ ")..."}
+G91
+G1 X{0 - global.calMoveXy} Y{0 - global.calMoveXy} F3000
+M400
+G90
+echo "Reverse NE done"

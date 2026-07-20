@@ -1,0 +1,29 @@
+; Step 4: apply X steps from global.calMeasure (set in Console after 3 Move SE).
+if !exists(global.calMeasure) || !exists(global.calExpected) || !exists(global.calX0) || !exists(global.calMoveXy)
+    abort "Run 1 Move NE and 3 Move SE first"
+
+if global.calMeasure < 50 || global.calMeasure > 300
+    abort "Set global.calMeasure in Console first (e.g. set global.calMeasure = 141.2)"
+
+if global.calExpected <= 0 || global.calX0 <= 0
+    abort "Run 1 Move NE first (baseline missing)"
+
+var Lse = global.calMeasure * 1.0
+var xNew = global.calX0 * global.calExpected / var.Lse
+M92 X{var.xNew}
+echo {"X steps: " ^ global.calX0 ^ " -> " ^ var.xNew ^ " (measured " ^ var.Lse ^ " mm)"}
+
+; Return toward start of the SE move
+G91
+G1 X{0 - global.calMoveXy} Y{global.calMoveXy} F3000
+M400
+G90
+
+var stepsXBalena = floor(var.xNew * 1000 + 0.5)
+var stepsYBalena = floor(move.axes[1].stepsPerMm * 1000 + 0.5)
+set global.calMeasure = 0
+
+echo {"Final M92 X" ^ var.xNew ^ " Y" ^ move.axes[1].stepsPerMm}
+echo {"Balena STEPSX=" ^ var.stepsXBalena ^ " STEPSY=" ^ var.stepsYBalena}
+echo "M92 active until reboot. Set STEPSX/STEPSY on Balena for a permanent sync."
+M291 P{"Done. X" ^ var.xNew ^ " Y" ^ move.axes[1].stepsPerMm ^ ". Balena STEPSX=" ^ var.stepsXBalena ^ " STEPSY=" ^ var.stepsYBalena} R"4 Apply X done" S1

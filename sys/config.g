@@ -102,6 +102,11 @@ global pelletFeeding = false
 global signalForceFault = false
 global printFinished = false
 global wasPrinting = false
+global calMeasure = 0
+global calMoveXy = 100
+global calExpected = 0
+global calX0 = 0
+global calY0 = 0
 
 ; Signal lights: solid green = standby at boot
 M42 P2 S1

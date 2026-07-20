@@ -1,0 +1,24 @@
+; Step 3: SE diagonal move (X+100 Y-100) to tune X later.
+if !move.axes[0].homed || !move.axes[1].homed
+    abort "Home X and Y first (G28)"
+
+if !exists(global.calMoveXy) || !exists(global.calExpected) || !exists(global.calX0)
+    abort "Run 1 Move NE first (and preferably 2 Apply Y)"
+
+if global.calMoveXy <= 0 || global.calExpected <= 0 || global.calX0 <= 0
+    abort "Run 1 Move NE first"
+
+set global.calMeasure = 0
+
+echo {"Ideal SE diagonal = " ^ global.calExpected ^ " mm"}
+echo "Moving SE (X+100 Y-100)..."
+
+G91
+G1 X{global.calMoveXy} Y{0 - global.calMoveXy} F3000
+M400
+G90
+
+echo "SE move done. Measure the line, then in Console:"
+echo "  set global.calMeasure = 141.2"
+echo "Then run macro: 4 Apply X"
+M291 P{"SE move done. Ideal ~" ^ global.calExpected ^ " mm. Measure, set global.calMeasure in Console, then run 4 Apply X."} R"3 Move SE done" S1

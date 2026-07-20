@@ -1,0 +1,31 @@
+; CoreXY steps calibration — split macros (Console stays usable).
+;
+; Prep:
+;   - Home X/Y
+;   - Park X0 Y400 (room to move), or use reverse macros to back up
+;
+; Workflow:
+;   1) Run "1 Move NE"
+;   2) Measure the pencil line (ideal ~141.4 mm)
+;   3) In Console:  set global.calMeasure = 141.2
+;   4) Run "2 Apply Y"
+;   5) Run "3 Move SE"
+;   6) Measure, then:  set global.calMeasure = 141.2
+;   7) Run "4 Apply X"
+;
+; Helpers:
+;   1b Move NE reverse / 3b Move SE reverse — undo the last diagonal
+;   Park X0 Y0 / Park X0 Y400 — absolute park positions
+
+echo "=== Calibrate X/Y steps ==="
+echo "Prep: Home, then Park X0 Y400"
+echo "1) 1 Move NE"
+echo "2) Measure (~141.4 mm)"
+echo "3) Console: set global.calMeasure = <mm>"
+echo "4) 2 Apply Y"
+echo "5) 3 Move SE"
+echo "6) Console: set global.calMeasure = <mm>"
+echo "7) 4 Apply X"
+echo "Helpers: 1b/3b reverse moves, Park X0 Y0 / X0 Y400"
+echo "Then set Balena STEPSX/STEPSY from the final echo."
+M291 P"See Console for steps. Park X0 Y400 first. Use 1-4 in order; enter mm in Console between move and apply. 1b/3b reverse if needed." R"How to calibrate" S1

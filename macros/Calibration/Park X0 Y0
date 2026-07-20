@@ -1,0 +1,9 @@
+; Park at X0 Y0 (absolute) — corner, little room for +X/+Y diagonals.
+if !move.axes[0].homed || !move.axes[1].homed
+    abort "Home X and Y first (G28)"
+
+echo "Moving to X0 Y0..."
+G90
+G1 X0 Y0 F6000
+M400
+echo "At X0 Y0"

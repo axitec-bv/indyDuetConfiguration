@@ -1,0 +1,34 @@
+; Step 1: NE diagonal move (X+100 Y+100) to tune Y later.
+if !move.axes[0].homed || !move.axes[1].homed
+    abort "Home X and Y first (G28)"
+
+if !exists(global.calMeasure)
+    global calMeasure = 0
+if !exists(global.calMoveXy)
+    global calMoveXy = 100
+if !exists(global.calExpected)
+    global calExpected = 0
+if !exists(global.calX0)
+    global calX0 = 0
+if !exists(global.calY0)
+    global calY0 = 0
+
+set global.calMoveXy = 100
+set global.calExpected = sqrt(2) * global.calMoveXy
+set global.calX0 = move.axes[0].stepsPerMm
+set global.calY0 = move.axes[1].stepsPerMm
+set global.calMeasure = 0
+
+echo {"Saved baseline M92 X" ^ global.calX0 ^ " Y" ^ global.calY0}
+echo {"Ideal NE diagonal = " ^ global.calExpected ^ " mm"}
+echo "Moving NE (X+100 Y+100)..."
+
+G91
+G1 X{global.calMoveXy} Y{global.calMoveXy} F3000
+M400
+G90
+
+echo "NE move done. Measure the line, then in Console:"
+echo "  set global.calMeasure = 141.2"
+echo "Then run macro: 2 Apply Y"
+M291 P{"NE move done. Ideal ~" ^ global.calExpected ^ " mm. Measure, set global.calMeasure in Console, then run 2 Apply Y."} R"1 Move NE done" S1

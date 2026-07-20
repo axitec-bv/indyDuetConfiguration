@@ -1,0 +1,24 @@
+; Step 2: apply Y steps from global.calMeasure (set in Console after 1 Move NE).
+if !exists(global.calMeasure) || !exists(global.calExpected) || !exists(global.calY0) || !exists(global.calMoveXy)
+    abort "Run 1 Move NE first"
+
+if global.calMeasure < 50 || global.calMeasure > 300
+    abort "Set global.calMeasure in Console first (e.g. set global.calMeasure = 141.2)"
+
+if global.calExpected <= 0 || global.calY0 <= 0
+    abort "Run 1 Move NE first (baseline missing)"
+
+var Lne = global.calMeasure * 1.0
+var yNew = global.calY0 * global.calExpected / var.Lne
+M92 Y{var.yNew}
+echo {"Y steps: " ^ global.calY0 ^ " -> " ^ var.yNew ^ " (measured " ^ var.Lne ^ " mm)"}
+
+; Return to start of the NE move
+G91
+G1 X{0 - global.calMoveXy} Y{0 - global.calMoveXy} F3000
+M400
+G90
+
+set global.calMeasure = 0
+echo "Y updated. Next: run 3 Move SE"
+M291 P{"Y updated to " ^ var.yNew ^ ". Next run 3 Move SE."} R"2 Apply Y done" S1
