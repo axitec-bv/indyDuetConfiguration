@@ -55,6 +55,13 @@ while !fileexists("/sys/daemon.g.bak")
     else
         set global.heaterFaultActive = false
 
+    ; Drop stale signalForceFault latched by an earlier heater fault (M562 / fault cleared)
+    if !exists(global.lastHeaterFaultActive)
+        global lastHeaterFaultActive = false
+    if global.lastHeaterFaultActive && !global.heaterFaultActive
+        set global.signalForceFault = false
+    set global.lastHeaterFaultActive = global.heaterFaultActive
+
     ; Track job lifecycle: processing -> idle means "print finished / remove product"
     if state.status == "processing" || state.status == "resuming"
         set global.wasPrinting = true
