@@ -46,6 +46,10 @@ while !fileexists("/sys/daemon.g.bak")
     if !exists(global.wasPrinting)
         global wasPrinting = false
 
+    ; Backup: keep red latched while RRF reports a heater fault (even if event macro missed)
+    if (exists(heat.heaters[0]) && heat.heaters[0].state == "fault") || (exists(heat.heaters[1]) && heat.heaters[1].state == "fault") || (exists(heat.heaters[2]) && heat.heaters[2].state == "fault")
+        set global.signalForceFault = true
+
     ; Track job lifecycle: processing -> idle means "print finished / remove product"
     if state.status == "processing" || state.status == "resuming"
         set global.wasPrinting = true
