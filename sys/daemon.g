@@ -46,9 +46,14 @@ while !fileexists("/sys/daemon.g.bak")
     if !exists(global.wasPrinting)
         global wasPrinting = false
 
-    ; Backup: keep red latched while RRF reports a heater fault (even if event macro missed)
+    if !exists(global.heaterFaultActive)
+        global heaterFaultActive = false
+
+    ; Live heater fault flag — clears automatically when M562 / fault reset (not latched)
     if (exists(heat.heaters[0]) && heat.heaters[0].state == "fault") || (exists(heat.heaters[1]) && heat.heaters[1].state == "fault") || (exists(heat.heaters[2]) && heat.heaters[2].state == "fault")
-        set global.signalForceFault = true
+        set global.heaterFaultActive = true
+    else
+        set global.heaterFaultActive = false
 
     ; Track job lifecycle: processing -> idle means "print finished / remove product"
     if state.status == "processing" || state.status == "resuming"
@@ -58,12 +63,13 @@ while !fileexists("/sys/daemon.g.bak")
         set global.printFinished = true
         set global.wasPrinting = false
 
+    ; signalForceFault = latched faults (stall, CAN loss, manual test); heaterFaultActive = live
     ; 1 Hz = 0.5s on/off via upTime*2; 0.5 Hz = 1s on/off via upTime
-    if global.signalForceFault && !(state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming")
+    if (global.signalForceFault || global.heaterFaultActive) && !(state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming")
         ; Not printing + fault: solid red (machine unavailable)
         M42 P2 S0
         M42 P4 S1
-    elif global.signalForceFault || state.status == "paused" || state.status == "pausing"
+    elif global.signalForceFault || global.heaterFaultActive || state.status == "paused" || state.status == "pausing"
         ; Problem during a job: flash red @ 1 Hz
         M42 P2 S0
         if mod(floor(state.upTime * 2), 2) = 0
