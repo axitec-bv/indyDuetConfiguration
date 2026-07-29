@@ -1,4 +1,4 @@
-; Clear fault + "print finished" → solid green standby (ready to print).
+; Clear fault + print-finished flag (idle flash is driven by daemon.g).
 if !exists(global.signalForceFault)
     global signalForceFault = false
 if !exists(global.printFinished)
@@ -9,6 +9,4 @@ if !exists(global.wasPrinting)
 set global.signalForceFault = false
 set global.printFinished = false
 set global.wasPrinting = false
-M42 P2 S1
-M42 P4 S0
-M118 P0 L2 S"Standby: solid green. Printing=1Hz green, finished=0.5Hz green, fault=solid red, pause=1Hz red"
+M118 P0 L2 S"Standby: 0.5Hz green flash. Printing=1Hz green, fault=solid red, pause=1Hz red"

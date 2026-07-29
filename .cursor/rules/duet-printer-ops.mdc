@@ -1,0 +1,63 @@
+---
+description: Deploy and operate Indy Duet 3 configs (daemon hot-swap, HTTP upload, signal lights)
+alwaysApply: true
+---
+
+# Indy Duet printer operations
+
+## Deploying to a live printer (standalone HTTP)
+
+Printers use RepRapFirmware **standalone** mode: `rr_connect`, `rr_gcode`, `rr_reply`, `rr_upload`, `rr_download`.
+
+- Bench IP example: `192.168.10.127`
+- After SD bring-up: `192.168.100.100` (same on every printer behind its router)
+- Always `curl "http://<host>/rr_connect?password="` before uploads
+
+```bash
+curl -s --data-binary @local/file.g "http://<host>/rr_upload?name=/sys/file.g"
+```
+
+**Do not upload repo `config.g` verbatim** — it has `M550 P"IndyprinterXXX"`. Download live config or patch hostname/IP before upload.
+
+## Updating `sys/daemon.g` (upload alone is NOT enough)
+
+`daemon.g` runs in a **`while` loop in memory**. Overwriting the SD file does not reload it.
+
+This repo uses hot-swap (see comments at top of `sys/daemon.g`):
+
+1. Upload **new** `/sys/daemon.g` first
+2. Upload **any** file to `/sys/daemon.g.bak` — running loop exits when `.bak` exists
+3. RRF restarts `daemon.g` from disk; startup deletes leftover `.bak`
+
+**Wrong order:** `.bak` before new `daemon.g` → firmware may reload the **old** file.
+
+**Fallback:** `M999` (full reboot). Required for the **first** deploy of this self-restarting daemon on a printer.
+
+Other `sys/` files (e.g. `heater-fault.g`, `config.g`) normally need `M999` or config reload after upload; only `daemon.g` uses the `.bak` trick.
+
+## Signal tower lights (`daemon.g` + macros)
+
+GPIO: P2 = green (SL_G), P4 = red (SL_R).
+
+| State | Light |
+|-------|--------|
+| Idle / ready | Green 0.5 Hz |
+| Printing OK | Green 1 Hz |
+| Print finished (idle) | Green 0.5 Hz (same as ready) |
+| Pause / problem during job | Red 1 Hz |
+| Fault / unavailable | Solid red |
+
+- **`global.signalForceFault`** — latched (stall, CAN loss during job, manual test). Clear with macro **Signal lights/Restore green** or `M98 P"/sys/signal-fault.g"` sets it.
+- **`global.heaterFaultActive`** — live from `heat.heaters[].state == "fault"`; clears after `M562`. Do **not** call `signal-fault.g` from `heater-fault.g` (causes sticky red after fault reset).
+
+Event handlers in `sys/`: `heater-fault.g`, `driver-stall.g`, `expansion-timeout.g`, `signal-fault.g`.
+
+## Motor CAN bring-up
+
+Use `tools/motor_bringup.py` — factory address **123**, target addresses **70–71** (CoreXY), **72–75** (Z corners). Order: 72 → 73 → 74 → 75 → 70 → 71. Only one motor on 123 at a time when flashing/readdressing.
+
+## SD first bring-up
+
+`./bringup-sd.sh --name IndyprinterNN [--volume /Volumes/NO_LABEL] [--ip ...]`
+
+Keeps factory `firmware/` and `www/`; replaces `sys/` and `macros/`.

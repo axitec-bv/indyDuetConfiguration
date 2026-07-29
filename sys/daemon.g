@@ -5,9 +5,8 @@
 ; (First deploy of this version still needs one reboot; after that updates apply without reboot.)
 ;
 ; Signal lights (IEC 60073-style):
-;   Solid green     = standby, ready to print
+;   Green 0.5 Hz    = idle / ready (standby or print finished — remove product)
 ;   Green 1 Hz      = printing, all OK
-;   Green 0.5 Hz    = print finished, remove product
 ;   Red flashing    = problem during a job (pause / attention)
 ;   Solid red       = fault, machine not available
 ; Flash timing uses state.upTime so rates stay accurate independent of loop delay.
@@ -90,17 +89,13 @@ while !fileexists("/sys/daemon.g.bak")
             M42 P2 S1
         else
             M42 P2 S0
-    elif state.status == "idle" && global.printFinished
-        ; Print finished: slow flash green @ 0.5 Hz (remove product)
+    elif state.status == "idle"
+        ; Idle / ready / print finished: slow flash green @ 0.5 Hz
         M42 P4 S0
         if mod(floor(state.upTime), 2) = 0
             M42 P2 S1
         else
             M42 P2 S0
-    elif state.status == "idle"
-        ; Standby: solid green (ready to print)
-        M42 P2 S1
-        M42 P4 S0
     else
         M42 P2 S0
         M42 P4 S0

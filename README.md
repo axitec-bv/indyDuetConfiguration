@@ -28,3 +28,25 @@ Physical layout (CAN address → corner):
 | 71 | CoreXY (X in `config.g`) |
 
 `bringup` order: **72 → 73 → 74 → 75 → 70 → 71** (front left first).
+
+## CoreXY steps calibration
+
+**Workflow:** tune M92 with NE/SE diagonal moves (this tool or `macros/Calibration/`), then print the validation cube.
+
+| Step | What |
+|------|------|
+| 1 | NE/SE pencil lines → iterative M92 X/Y (GUI sends M92 each round) |
+| 2 | Save M92 in `sys/config.g` + Balena STEPSX/STEPSY |
+| 3 | Print `gcodes/cube_callibration_PP_1h6m.gcode` (~49 mm cube, ~1h) and measure |
+
+```bash
+python3 tools/corexy_calibrate.py --gui
+python3 tools/corexy_calibrate.py --host 192.168.10.127
+```
+
+Upload cube to printer SD (once):
+
+```bash
+curl -s --data-binary @gcodes/cube_callibration_PP_1h6m.gcode \
+  "http://192.168.10.127/rr_upload?name=0:/gcodes/cube_callibration_PP_1h6m.gcode"
+```

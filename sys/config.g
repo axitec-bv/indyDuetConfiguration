@@ -108,7 +108,7 @@ global calExpected = 0
 global calX0 = 0
 global calY0 = 0
 
-; Signal lights: solid green = standby at boot
+; Signal lights: green flash @ 0.5 Hz once daemon.g runs (boot sets green on briefly)
 M42 P2 S1
 M42 P4 S0
 
