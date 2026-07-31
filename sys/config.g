@@ -65,6 +65,10 @@ M950 H2 C"1.out7" T2 Q200             ; create heater #2
 M143 H2 P0 T1 C0 S285 A0          ; configure heater monitor #0 for heater #2
 M307 H2 R1.21 K0.239:0.000 D9.06 E1.35 S1.00 B0 ; configure model of heater #2
 
+; Heater fault: allowed excursion from setpoint (default 15). Retune dual-zone PID if trips persist.
+M570 H1 P8 T20 S1
+M570 H2 P8 T20 S1
+
 ; Fan
 M950 F0 C"!1.out3+out3.tach"   ; create fan #0
 M106 P0 C"Tool" S0 L0 X1 B0.1 ; configure fan #0

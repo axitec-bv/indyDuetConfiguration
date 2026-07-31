@@ -26,10 +26,13 @@ curl -s --data-binary @local/file.g "http://<host>/rr_upload?name=/sys/file.g"
 This repo uses hot-swap (see comments at top of `sys/daemon.g`):
 
 1. Upload **new** `/sys/daemon.g` first
-2. Upload **any** file to `/sys/daemon.g.bak` — running loop exits when `.bak` exists
+2. Upload **any** file to `/sys/daemon.g.bak` — running loop exits when `.bak` exists  
+   (config-sync uses `rr_move` to rename the running file to `.bak`, then uploads the new file)
 3. RRF restarts `daemon.g` from disk; startup deletes leftover `.bak`
 
-**Wrong order:** `.bak` before new `daemon.g` → firmware may reload the **old** file.
+**Wrong order:** create `.bak` before new `daemon.g` is on SD → firmware may reload the **old** file.
+
+**GPIO in daemon:** use expression form `M42 P{2} S{1}` (not `M42 P2 S1`) so long moves do not stall the loop.
 
 **Fallback:** `M999` (full reboot). Required for the **first** deploy of this self-restarting daemon on a printer.
 

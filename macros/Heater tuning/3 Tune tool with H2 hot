@@ -1,0 +1,26 @@
+; Step 3: tune tool T0 (H1+H2 PID with fan model) while H2 (nozzle) is held hot.
+; Defaults nozzle=235 tune=235. Override: M98 P"..." S235 N235
+
+if !exists(param.S)
+    param.S = 235
+if !exists(param.N)
+    param.N = param.S
+
+if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
+    M291 P"Cool both zones below 40°C first." R"Too hot" S3
+    abort "Start from ambient"
+
+T0 P0
+M568 P0 S0 R0 A0
+G10 P0 S0:{param.N} R0:{param.N}
+
+echo {"H2 nozzle → " ^ param.N ^ "°C, tuning tool T0 to " ^ param.S ^ "°C (both zones + fan)"}
+echo {"M303 T0 S" ^ param.S ^ " H0"}
+M303 T0 S{param.S} H0
+
+while heat.heaters[1].state = "tuning" || heat.heaters[2].state = "tuning"
+    G4 S1
+
+echo "Tool tune done. Copy M307 H1 and M307 H2 from Console into config.g"
+M568 P0 S0 R0 A0
+M291 P"Tool tune done. Update both M307 lines. Re-run 2→3 if values still drift." R"T0 tuned" S1

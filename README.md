@@ -50,3 +50,15 @@ Upload cube to printer SD (once):
 curl -s --data-binary @gcodes/cube_callibration_PP_1h6m.gcode \
   "http://192.168.10.127/rr_upload?name=0:/gcodes/cube_callibration_PP_1h6m.gcode"
 ```
+
+## Dual-zone extruder PID (H1 band + H2 nozzle)
+
+Tool 0 uses both heaters. PID must be tuned **with the other zone hot**, not in isolation — see [Duet forum](https://forum.duet3d.com/topic/26910/strategy-for-pid-tuning-multiple-heat-zones/2).
+
+DWC → **Heater tuning** macros (run from cold, in order):
+
+1. **Tune H1 band alone**
+2. **Tune H2 nozzle with H1 hot** — band at print temp while nozzle autotunes
+3. **Tune tool with H2 hot** — both zones + fan model
+
+Copy each `M307` line from Console into `config.g`. Re-run steps 2–3 until values stabilise. **Clear heater fault** resets after an overshoot trip (`M562 H2`).

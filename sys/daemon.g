@@ -4,9 +4,12 @@
 ; .bak appears, letting RRF load the new daemon.g, which deletes the leftover .bak on startup.
 ; (First deploy of this version still needs one reboot; after that updates apply without reboot.)
 ;
+; GPIO / dwell use {expression} form so RRF does not sync daemon commands to the motion
+; queue during long manual extrusions or slow moves (see Duet forum #31714).
+;
 ; Signal lights (IEC 60073-style):
 ;   Green 0.5 Hz    = idle / ready (standby or print finished — remove product)
-;   Green 1 Hz      = printing, all OK
+;   Green 1 Hz      = printing / busy, all OK
 ;   Red flashing    = problem during a job (pause / attention)
 ;   Solid red       = fault, machine not available
 ; Flash timing uses state.upTime so rates stay accurate independent of loop delay.
@@ -18,24 +21,20 @@ while !fileexists("/sys/daemon.g.bak")
     ; --- Water temperature control ---
     if exists(sensors.analog[3])
         if sensors.analog[3].lastReading > global.waterTemp
-            ; M118 P0 L2 S{"Water temp too high"}
-            M42 P1 S1  ; Turn on pump
+            M42 P{1} S{1}  ; pump on
         elif sensors.analog[3].lastReading < global.waterTemp - 0.2
-            ; M118 P0 L2 S{"Water temp ok"}
-            M42 P1 S0  ; Turn off pump
+            M42 P{1} S{0}  ; pump off
     else
-        ; M118 P0 L2 S{"Analog[3] not present - skipping pump control"}
-        M42 P1 S0  ; Fail-safe: keep pump off (or on, if safer)
+        M42 P{1} S{0}  ; fail-safe: pump off
 
     ; --- Pellet feeder control ---
     if exists(sensors.analog[7])
         if sensors.analog[7].lastReading > 85 && global.pelletFeeding
-            M42 P3 S1  ; Turn on feeder
+            M42 P{3} S{1}
         elif sensors.analog[7].lastReading < 85 || !global.pelletFeeding
-            M42 P3 S0  ; Turn off feeder
+            M42 P{3} S{0}
     else
-        ; M118 P0 L2 S{"Analog[7] not present - skipping feeder control"}
-        M42 P3 S0  ; Fail-safe off
+        M42 P{3} S{0}
 
     ; --- Signal lights (P2/out8 = SL_G green, P4/out9 = SL_R red) ---
     if !exists(global.signalForceFault)
@@ -73,31 +72,31 @@ while !fileexists("/sys/daemon.g.bak")
     ; 1 Hz = 0.5s on/off via upTime*2; 0.5 Hz = 1s on/off via upTime
     if (global.signalForceFault || global.heaterFaultActive) && !(state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming")
         ; Not printing + fault: solid red (machine unavailable)
-        M42 P2 S0
-        M42 P4 S1
+        M42 P{2} S{0}
+        M42 P{4} S{1}
     elif global.signalForceFault || global.heaterFaultActive || state.status == "paused" || state.status == "pausing"
         ; Problem during a job: flash red @ 1 Hz
-        M42 P2 S0
+        M42 P{2} S{0}
         if mod(floor(state.upTime * 2), 2) = 0
-            M42 P4 S1
+            M42 P{4} S{1}
         else
-            M42 P4 S0
+            M42 P{4} S{0}
     elif state.status == "processing" || state.status == "resuming" || state.status == "busy"
-        ; Printing OK: flash green @ 1 Hz
-        M42 P4 S0
+        ; Printing / long manual move: flash green @ 1 Hz
+        M42 P{4} S{0}
         if mod(floor(state.upTime * 2), 2) = 0
-            M42 P2 S1
+            M42 P{2} S{1}
         else
-            M42 P2 S0
+            M42 P{2} S{0}
     elif state.status == "idle"
         ; Idle / ready / print finished: slow flash green @ 0.5 Hz
-        M42 P4 S0
+        M42 P{4} S{0}
         if mod(floor(state.upTime), 2) = 0
-            M42 P2 S1
+            M42 P{2} S{1}
         else
-            M42 P2 S0
+            M42 P{2} S{0}
     else
-        M42 P2 S0
-        M42 P4 S0
+        M42 P{2} S{0}
+        M42 P{4} S{0}
 
-    G4 S0.2   ; Small delay to prevent overloading
+    G4 P{200}   ; 200 ms between loops — expression form avoids motion sync

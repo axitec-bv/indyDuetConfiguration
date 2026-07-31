@@ -14,22 +14,26 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import re
 import sys
 import threading
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 import urllib.error
 import urllib.parse
 import urllib.request
 
 DEFAULT_MOVE_XY = 100.0
+DEFAULT_PRELOAD_XY = 10.0  # take up free play before the measured move
 DEFAULT_HOST = "192.168.10.127"  # bench; production printers use 192.168.100.100
 DEFAULT_M92 = "M92 X32.41 Y32.61 Z1600 E420"  # sys/config.g
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CALIBRATION_CUBE_LOCAL = REPO_ROOT / "gcodes" / "cube_callibration_PP_1h6m.gcode"
 CALIBRATION_CUBE_SD = "0:/gcodes/cube_callibration_PP_1h6m.gcode"
+SESSION_LOG_DIR = Path(__file__).resolve().parent / "corexy_calibrate_logs"
 M92_LINE = re.compile(
     r"^M92\b.*[Xx](?P<x>[\d.]+).*[Yy](?P<y>[\d.]+)",
     re.IGNORECASE,
@@ -48,6 +52,45 @@ def new_steps(old: float, expected: float, measured: float) -> float:
 
 def balena_steps(steps_per_mm: float) -> int:
     return int(math.floor(steps_per_mm * 1000 + 0.5))
+
+
+class SessionLog:
+    """Append-only crash-safe session log (flush + fsync after each write)."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._fh = path.open("a", encoding="utf-8")
+        self.write(f"=== CoreXY calibration session started {datetime.now().isoformat(timespec='seconds')} ===")
+
+    def write(self, message: str) -> None:
+        stamp = datetime.now().strftime("%H:%M:%S")
+        self._fh.write(f"{stamp}  {message}\n")
+        self._fh.flush()
+        try:
+            os.fsync(self._fh.fileno())
+        except OSError:
+            pass
+
+    def snapshot(self, x: float, y: float, template: str = "") -> None:
+        line = format_m92_line(x, y, template)
+        self.write(
+            f"CURRENT  {line}  |  STEPSX={balena_steps(x)}  STEPSY={balena_steps(y)}"
+        )
+
+    def close(self) -> None:
+        if self._fh.closed:
+            return
+        try:
+            self.write("=== session ended ===")
+            self._fh.close()
+        except OSError:
+            pass
+
+
+def new_session_log() -> SessionLog:
+    name = datetime.now().strftime("corexy_calibrate_%Y%m%d_%H%M%S.log")
+    return SessionLog(SESSION_LOG_DIR / name)
 
 
 def extract_xy_from_m92(line: str) -> tuple[float, float]:
@@ -309,6 +352,10 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
     root.title("CoreXY calibration wizard")
     root.resizable(False, False)
 
+    session_log = new_session_log()
+    session_log.write(f"host={default_host}  move_xy={move_xy}  baseline={default_m92}")
+    session_log.snapshot(*extract_xy_from_m92(default_m92), default_m92)
+
     state: dict[str, float] = {
         "x": extract_xy_from_m92(default_m92)[0],
         "y": extract_xy_from_m92(default_m92)[1],
@@ -349,6 +396,8 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             refresh_history(y_history_txt, y_iterations, "Y")
             refresh_history(x_history_txt, x_iterations, "X")
             update_baseline_labels()
+            session_log.write(f"baseline set from M92: {m92_var.get().strip()}")
+            session_log.snapshot(float(state["x"]), float(state["y"]), m92_var.get())
         except ValueError as exc:
             set_status(str(exc))
 
@@ -370,27 +419,78 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
     def set_status(msg: str) -> None:
         status_lbl.config(text=msg)
 
-    def send_printer_move(label: str, gcode: str) -> None:
+    def set_move_buttons(enabled: bool) -> None:
+        state_flag = ["!disabled"] if enabled else ["disabled"]
+        for btn in move_btns:
+            btn.state(state_flag)
+
+    def send_printer_move(
+        label: str,
+        gcode: str,
+        *,
+        on_done: Callable[[], None] | None = None,
+        keep_disabled: bool = False,
+    ) -> None:
         host = host_var.get().strip()
         if not host:
             set_status("Enter printer IP first (step 1).")
             return
 
         def worker() -> None:
-            set_status(f"Sending {label} …")
-            for btn in move_btns:
-                btn.state(["disabled"])
+            root.after(0, lambda: set_status(f"Sending {label} …"))
+            root.after(0, lambda: set_move_buttons(False))
             try:
                 reply = send_gcode(host, gcode)
                 tail = reply.splitlines()[-1] if reply else "ok"
-                set_status(f"{label} done — {tail}")
+                root.after(0, lambda: set_status(f"{label} done — {tail}"))
+                if on_done:
+                    root.after(0, on_done)
             except urllib.error.URLError as exc:
-                set_status(f"{label} failed: {exc}")
+                root.after(0, lambda: set_status(f"{label} failed: {exc}"))
+                root.after(0, lambda: set_move_buttons(True))
             finally:
-                for btn in move_btns:
-                    btn.state(["!disabled"])
+                if not keep_disabled and on_done is None:
+                    root.after(0, lambda: set_move_buttons(True))
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def wait_preload_ack(title: str) -> bool:
+        """Modal: press 0 or Enter to continue the full measured move."""
+        result = {"ok": False}
+        dlg = tk.Toplevel(root)
+        dlg.title(title)
+        dlg.resizable(False, False)
+        dlg.transient(root)
+        dlg.grab_set()
+        ttk.Label(
+            dlg,
+            text=(
+                "Preload done — free play should be taken up.\n\n"
+                "Mark your start / ready the scale, then press 0 or Enter\n"
+                "to run the full measured move."
+            ),
+            justify="left",
+            padding=14,
+        ).pack(anchor="w")
+        row = ttk.Frame(dlg, padding=(14, 0, 14, 14))
+        row.pack(fill="x")
+
+        def accept(_: object | None = None) -> None:
+            result["ok"] = True
+            dlg.destroy()
+
+        def cancel() -> None:
+            result["ok"] = False
+            dlg.destroy()
+
+        ttk.Button(row, text="0 / Enter — continue", command=accept).pack(side="left", padx=(0, 8))
+        ttk.Button(row, text="Cancel", command=cancel).pack(side="left")
+        dlg.bind("0", accept)
+        dlg.bind("<Return>", accept)
+        dlg.bind("<Escape>", lambda _e: cancel())
+        dlg.protocol("WM_DELETE_WINDOW", cancel)
+        dlg.wait_window()
+        return result["ok"]
 
     def fetch_from_printer() -> None:
         host = host_var.get().strip()
@@ -405,8 +505,45 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             set_status(f"Fetch failed: {exc}")
 
     def run_move(label: str, ne: bool, forward: bool) -> None:
+        """Forward (+) preloads 10 mm, waits for 0/Enter, then full move.
+        Reverse (−) undoes preload + full so the carriage returns to start."""
         try:
-            send_printer_move(label, diagonal_move_gcode(move_mm(), ne, forward))
+            full = move_mm()
+            preload = min(DEFAULT_PRELOAD_XY, full) if full > DEFAULT_PRELOAD_XY else 0.0
+
+            if not forward:
+                # Undo both the preload and the measured stroke.
+                total = full + preload
+                send_printer_move(
+                    f"{label} ({fmt(total, 0)} mm = {fmt(preload, 0)}+{fmt(full, 0)})",
+                    diagonal_move_gcode(total, ne, False),
+                )
+                return
+
+            if preload <= 0:
+                send_printer_move(label, diagonal_move_gcode(full, ne, True))
+                return
+
+            def after_preload() -> None:
+                set_status(
+                    f"{label}: preload {fmt(preload, 0)} mm done — press 0 or Enter for "
+                    f"{fmt(full, 0)} mm"
+                )
+                if not wait_preload_ack(f"{label} — continue?"):
+                    set_move_buttons(True)
+                    set_status(f"{label}: cancelled after preload.")
+                    return
+                send_printer_move(
+                    f"{label} ({fmt(full, 0)} mm)",
+                    diagonal_move_gcode(full, ne, True),
+                )
+
+            send_printer_move(
+                f"{label} preload {fmt(preload, 0)} mm",
+                diagonal_move_gcode(preload, ne, True),
+                on_done=after_preload,
+                keep_disabled=True,
+            )
         except ValueError as exc:
             set_status(str(exc))
 
@@ -427,14 +564,18 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             return
 
         def worker() -> None:
-            set_status("Sending M92 …")
+            root.after(0, lambda: set_status("Sending M92 …"))
             try:
                 push_m92_to_duet(host, float(state["x"]), float(state["y"]), m92_var.get())
-                root.after(0, sync_m92_var)
                 msg = f"M92 applied: X{fmt(float(state['x']))} Y{fmt(float(state['y']))}"
-                root.after(0, lambda: set_status(msg))
-                if on_done:
-                    root.after(0, on_done)
+
+                def done() -> None:
+                    sync_m92_var()
+                    set_status(msg)
+                    if on_done:
+                        on_done()
+
+                root.after(0, done)
             except urllib.error.URLError as exc:
                 root.after(0, lambda: set_status(f"M92 failed: {exc}"))
 
@@ -447,7 +588,7 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             return
 
         def worker() -> None:
-            set_status(f"{label} …")
+            root.after(0, lambda: set_status(f"{label} …"))
             try:
                 fn()
                 root.after(0, lambda: set_status(f"{label} done."))
@@ -533,6 +674,12 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             update_baseline_labels()
             update_final_labels()
             measure_var.set("")
+            session_log.write(
+                f"{axis} round {len(rows)}: measured={measured:.3f} mm  "
+                f"ideal={ideal:.3f}  err={err:+.3f}  "
+                f"→ X={fmt(float(state['x']))} Y={fmt(float(state['y']))}"
+            )
+            session_log.snapshot(float(state["x"]), float(state["y"]), m92_var.get())
 
             def after_m92() -> None:
                 if improvement is not None:
@@ -604,6 +751,13 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
     move_var.trace_add("write", lambda *_: update_baseline_labels())
     baseline_lbl = ttk.Label(s0, text="")
     baseline_lbl.pack(anchor="w", pady=(8, 0))
+    log_path_lbl = ttk.Label(
+        s0,
+        text=f"Session log: {session_log.path}",
+        foreground="#666",
+        font=("", 9),
+    )
+    log_path_lbl.pack(anchor="w", pady=(6, 0))
     ttk.Checkbutton(
         s0,
         text="Skip Y tuning this session (e.g. linear scale faces the other way)",
@@ -619,6 +773,9 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
         s1,
         text=(
             "NE diagonal — Y belt motor only. Repeat until error is small.\n\n"
+            "NE + first moves 10 mm (takes up free play), then waits for 0/Enter\n"
+            "before the full XY move. Ideal length is still the full diagonal only.\n"
+            "NE − undoes 10+100 mm so you return to the same start position.\n\n"
             "Each round: NE + → Z +100 → measure → Apply round\n"
             "(M92 sent to printer) → NE − → NE + → measure again …\n\n"
             "Can't measure NE? Use  Skip Y →  (bottom right) to tune X only."
@@ -656,6 +813,8 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
         s2,
         text=(
             "SE diagonal — X belt motor only. Same iterative loop as Y.\n\n"
+            "SE + preloads 10 mm, waits for 0/Enter, then the full move.\n"
+            "SE − undoes 10+100 mm to return to start.\n\n"
             "Each round: SE + → measure → Apply round (M92 on printer) → SE − → SE + …"
         ),
         justify="left",
@@ -721,6 +880,14 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
         foreground="#666",
         font=("", 9),
     ).pack(anchor="w", pady=(6, 0))
+    ttk.Label(
+        s3,
+        text=f"Session log (kept if the app crashes): {session_log.path}",
+        foreground="#666",
+        font=("", 9),
+        wraplength=560,
+        justify="left",
+    ).pack(anchor="w", pady=(8, 0))
 
     def update_final_labels() -> None:
         final_m92_lbl.config(text=format_m92_line(float(state["x"]), float(state["y"]), m92_var.get()))
@@ -734,6 +901,8 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
     def skip_y_step() -> None:
         nonlocal y_skipped
         y_skipped = True
+        session_log.write(f"Y tuning skipped — keeping Y={fmt(float(state['y']))}")
+        session_log.snapshot(float(state["x"]), float(state["y"]), m92_var.get())
         set_status(f"Y tuning skipped — keeping Y={fmt(float(state['y']))} steps/mm.")
         show_step(2)
 
@@ -771,6 +940,8 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
             skip_y_btn.pack_forget()
         if n == len(step_frames) - 1:
             update_final_labels()
+            session_log.write("reached Done step")
+            session_log.snapshot(float(state["x"]), float(state["y"]), m92_var.get())
 
     def go_back() -> None:
         show_step(step_index.get() - 1)
@@ -810,7 +981,20 @@ def run_gui(default_m92: str, move_xy: float, default_host: str) -> None:
 
     parse_m92()
     show_step(0)
-    root.mainloop()
+    set_status(f"Ready. Logging to {session_log.path}")
+
+    def on_close() -> None:
+        session_log.close()
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", on_close)
+    try:
+        root.mainloop()
+    except Exception as exc:
+        session_log.write(f"FATAL: {type(exc).__name__}: {exc}")
+        raise
+    finally:
+        session_log.close()
 
 
 def main() -> None:
