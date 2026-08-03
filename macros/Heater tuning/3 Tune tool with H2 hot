@@ -1,13 +1,16 @@
 ; Step 3: tune tool T0 (H1+H2 PID with fan model) while H2 (nozzle) is held hot.
-; Defaults nozzle=235 tune=235. Override: M98 P"..." S235 N235
+; FGF dual-zone — expect a long run. Defaults 235°C. Override: M98 P"..." S235 N235 D120
 
 var temp = 235
 var nozzle = 235
+var dead = 120
 if exists(param.S)
 	set var.temp = param.S
 	set var.nozzle = param.S
 if exists(param.N)
 	set var.nozzle = param.N
+if exists(param.D)
+	set var.dead = param.D
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first." R"Too hot" S3
@@ -15,15 +18,21 @@ if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 
 T0 P0
 M568 P0 S0 R0 A0
+
+M307 H1 R0.2 D{var.dead} S1.00 B0
+M307 H2 R0.4 D{var.dead} S1.00 B0
+
 G10 P0 S0:{var.nozzle} R0:{var.nozzle}
 
-echo {"H2 nozzle → " ^ var.nozzle ^ "°C, tuning tool T0 to " ^ var.temp ^ "°C (both zones + fan)"}
-echo {"M303 T0 S" ^ var.temp ^ " H0"}
+echo {"H2 nozzle → " ^ var.nozzle ^ "°C, then M303 T0 S" ^ var.temp ^ " H0 (D" ^ var.dead ^ ")"}
+echo "FGF tool tune can take 30–60+ min"
+M291 P{"Nozzle held hot, then tool tune. FGF is slow — stay with printer."} R"T0 tune" S1
 M303 T0 S{var.temp} H0
 
 while heat.heaters[1].state = "tuning" || heat.heaters[2].state = "tuning"
 	G4 S1
 
-echo "Tool tune done. Copy M307 H1 and M307 H2 from Console into config.g"
 M568 P0 S0 R0 A0
-M291 P"Tool tune done. Update both M307 lines. Re-run 2→3 if values still drift." R"T0 tuned" S1
+
+echo "Tool tune finished (check Console for success vs cancelled). Copy M307 H1 and M307 H2 into config.g"
+M291 P"Check Console for M307 lines (or cancel message). Update config.g. Re-run 2→3 if values drift." R"T0 done" S1

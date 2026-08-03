@@ -1,22 +1,26 @@
-; Dual-zone extruder PID (Indy tool 0: H1 band + H2 nozzle).
+; Dual-zone extruder PID (Indy FGF tool 0: H1 band + H2 nozzle).
 ; Strategy from https://forum.duet3d.com/topic/26910/strategy-for-pid-tuning-multiple-heat-zones/
 ;
+; FGF barrels heat slowly. Macros raise M307 dead time before M303 so RRF
+; does not cancel with "target temperature was not reached".
+;
 ; Run macros in order from COLD (all heaters off, ~25°C):
-;   1) Tune H1 band alone
-;   2) Tune H2 nozzle with H1 held hot (simulates band preheat)
-;   3) Tune tool T0 with H2 held hot (simulates both zones in use)
+;   1) Tune H1 band alone          (~15–40+ min)
+;   2) Tune H2 nozzle with H1 hot  (~20–45+ min)
+;   3) Tune tool T0 with H2 hot    (~30–60+ min)
 ;
 ; After each M303, copy the reported M307 line into config.g (or run config-sync).
 ; Repeat 2–3 until M307 values stabilise.
+; If cancelled: retry with higher D, e.g. M98 P"0:/macros/Heater tuning/1 Tune H1 band alone" D180
 ;
 ; G10 P0 Saaa:bbb  →  H1 (band) active : H2 (nozzle) active
 ;
 ; Clear a heater fault: M562 H2  (or DWC heater fault reset)
 
-echo "=== Dual-zone heater PID ==="
+echo "=== Dual-zone heater PID (FGF) ==="
 echo "H1 = Bandheater (barrel)   H2 = Nozzle"
 echo "1) Tune H1 band alone"
 echo "2) Tune H2 nozzle with H1 hot"
 echo "3) Tune tool with H2 hot"
-echo "Start cold. Copy M307 lines from Console into config.g."
-M291 P"See Console. Run macros 1→2→3 from cold. H1=band H2=nozzle." R"Dual-zone PID tune" S1
+echo "Start cold. Slow heat-up is normal. Copy M307 lines from Console into config.g."
+M291 P"FGF: run 1→2→3 from cold. Band tune is slow (15–40+ min). Stay with printer." R"Dual-zone PID tune" S1

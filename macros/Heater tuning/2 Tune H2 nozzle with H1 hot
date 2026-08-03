@@ -1,14 +1,17 @@
 ; Step 2: tune H2 (nozzle) while H1 (band) is held at bandTemp.
 ; Simulates heat leaking from band → nozzle during real prints.
-; Defaults: band=235 nozzle tune=235. Override: M98 P"..." S235 B235
+; FGF: band heat-soak is slow. Defaults 235°C. Override: M98 P"..." S235 B235 D90
 
 var nozzle = 235
 var band = 235
+var dead = 90
 if exists(param.S)
 	set var.nozzle = param.S
 	set var.band = param.S
 if exists(param.B)
 	set var.band = param.B
+if exists(param.D)
+	set var.dead = param.D
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first." R"Too hot" S3
@@ -16,15 +19,30 @@ if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 
 T0 P0
 M568 P0 S0 R0 A0
+
+; Allow slow approach while band is also heating
+M307 H2 R0.4 D{var.dead} S1.00 B0
+
 G10 P0 S{var.band}:0 R{var.band}:0
 
-echo {"H1 band → " ^ var.band ^ "°C, tuning H2 to " ^ var.nozzle ^ "°C"}
-echo {"M303 H2 S" ^ var.nozzle}
+echo {"H1 band → " ^ var.band ^ "°C, then M303 H2 S" ^ var.nozzle ^ " (D" ^ var.dead ^ ")"}
+echo "FGF: waiting for band + nozzle tune — can take 20–45+ min"
+M291 P{"Band to " ^ var.band ^ "°C then tune nozzle. Slow FGF heat-up — stay with printer."} R"H2 tune" S1
 M303 H2 S{var.nozzle}
 
 while heat.heaters[2].state = "tuning"
 	G4 S1
 
-echo "H2 tune done. Copy M307 H2 ... from Console into config.g"
 M568 P0 S0 R0 A0
-M291 P{"H2 done. Copy M307 H2 line. Next: 3 Tune tool with H2 hot."} R"H2 tuned" S1
+
+if heat.heaters[2].state = "fault"
+	echo "H2 tune FAILED (heater fault). M562 H2, check nozzle heater, retry."
+	M291 P"Tune failed (fault). Clear fault and retry." R"H2 failed" S1
+	abort "H2 tune failed"
+elif heat.heaters[2].current < var.nozzle - 15
+	echo {"H2 tune likely FAILED — nozzle " ^ heat.heaters[2].current ^ "°C. Retry with higher D."}
+	M291 P{"Likely cancelled — nozzle at " ^ heat.heaters[2].current ^ "°C. Check Console."} R"H2 failed?" S1
+	abort "H2 tune did not reach target"
+else
+	echo "H2 tune done. Copy M307 H2 ... from Console into config.g"
+	M291 P{"H2 done. Copy M307 H2 line. Next: 3 Tune tool with H2 hot."} R"H2 tuned" S1

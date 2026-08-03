@@ -53,11 +53,13 @@ curl -s --data-binary @gcodes/cube_callibration_PP_1h6m.gcode \
 
 ## Dual-zone extruder PID (H1 band + H2 nozzle)
 
-Tool 0 uses both heaters. PID must be tuned **with the other zone hot**, not in isolation — see [Duet forum](https://forum.duet3d.com/topic/26910/strategy-for-pid-tuning-multiple-heat-zones/2).
+Tool 0 uses both heaters on an **FGF pellet** head. PID must be tuned **with the other zone hot**, not in isolation — see [Duet forum](https://forum.duet3d.com/topic/26910/strategy-for-pid-tuning-multiple-heat-zones/2).
 
-DWC → **Heater tuning** macros (run from cold, in order):
+The barrel is slow: macros raise `M307` dead time before `M303` (default band **D120**). If Console says *target temperature was not reached*, cool down and retry with e.g. `M98 P"0:/macros/Heater tuning/1 Tune H1 band alone" D180`.
 
-1. **Tune H1 band alone**
+DWC → **Heater tuning** macros (run from cold, in order; stay with the printer):
+
+1. **Tune H1 band alone** (~15–40+ min)
 2. **Tune H2 nozzle with H1 hot** — band at print temp while nozzle autotunes
 3. **Tune tool with H2 hot** — both zones + fan model
 

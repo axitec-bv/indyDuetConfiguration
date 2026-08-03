@@ -1,9 +1,14 @@
 ; Step 1: tune H1 (band) alone — other zone cold.
-; Default 235°C; pass S250 in Console to override: M98 P"..." S250
+; FGF pellet barrel: large thermal mass — allow a long heat-up window.
+; Default 235°C; override: M98 P"..." S250
+; Dead-time override (seconds): M98 P"..." S235 D180
 
 var temp = 235
+var dead = 120
 if exists(param.S)
 	set var.temp = param.S
+if exists(param.D)
+	set var.dead = param.D
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first (heaters off)." R"Too hot" S3
@@ -12,12 +17,27 @@ if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 T0 P0
 M568 P0 S0 R0 A0
 
-echo {"M303 H1 S" ^ var.temp ^ " — band only, ~5–8 min"}
+; Slow FGF model so M303 does not abort before the band reaches target
+M307 H1 R0.2 D{var.dead} S1.00 B0
+
+echo {"FGF band: M307 H1 D" ^ var.dead ^ " then M303 H1 S" ^ var.temp}
+echo "Expect 15–40+ min — do not leave printer unattended"
+M291 P{"Band tune to " ^ var.temp ^ "°C. FGF barrel is slow (15–40+ min). Stay with the printer."} R"H1 tune" S1
 M303 H1 S{var.temp}
 
 while heat.heaters[1].state = "tuning"
 	G4 S1
 
-echo "H1 tune done. Copy M307 H1 ... from Console into config.g"
 M568 P0 S0 R0 A0
-M291 P{"H1 done. Copy M307 H1 line. Next: 2 Tune H2 with H1 hot."} R"H1 tuned" S1
+
+if heat.heaters[1].state = "fault"
+	echo "H1 tune FAILED (heater fault). Cool down, M562 H1, check wiring/power, retry with higher D."
+	M291 P"Tune failed (fault). Clear fault, check band heater, retry with D180." R"H1 failed" S1
+	abort "H1 tune failed"
+elif heat.heaters[1].current < var.temp - 15
+	echo {"H1 tune likely FAILED — band only " ^ heat.heaters[1].current ^ "°C (target " ^ var.temp ^ "). Retry with higher D (e.g. D180)."}
+	M291 P{"Likely cancelled — band at " ^ heat.heaters[1].current ^ "°C. Retry with D180 if Console said target not reached."} R"H1 failed?" S1
+	abort "H1 tune did not reach target"
+else
+	echo "H1 tune done. Copy M307 H1 ... from Console into config.g"
+	M291 P{"H1 done. Copy M307 H1 line. Next: 2 Tune H2 with H1 hot."} R"H1 tuned" S1

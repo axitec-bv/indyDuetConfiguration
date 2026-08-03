@@ -43,6 +43,10 @@ G4 P{200}
 
 Not `M42 P2 S1` / `G4 S0.2`.
 
-## Dual-zone heater PID
+## Dual-zone heater PID (FGF pellet)
 
-Tool 0 = H1 band + H2 nozzle. Tune from cold via `macros/Heater tuning/` **1 → 2 → 3**. Copy each Console `M307` into `config.g`. See README “Dual-zone extruder PID”.
+Tool 0 = H1 band + H2 nozzle. Large thermal mass — **not** FDM-hotend timing.
+
+Tune from cold via `macros/Heater tuning/` **1 → 2 → 3**. Macros set a high `M307 … D` (default H1 D120) before `M303` so RRF does not cancel with “target temperature was not reached”. Override: `M98 P"…" D180`.
+
+Copy each Console `M307` into `config.g`. See README “Dual-zone extruder PID”.
