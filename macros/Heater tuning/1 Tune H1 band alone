@@ -2,6 +2,8 @@
 ; FGF pellet barrel: large thermal mass — allow a long heat-up window.
 ; Default 235°C; override: M98 P"..." S250
 ; Dead-time override (seconds): M98 P"..." S235 D180
+;
+; RRF requires deadTime * coolingRate <= 50 ("dead time too close to cooling time constant").
 
 var temp = 235
 var dead = 120
@@ -9,6 +11,10 @@ if exists(param.S)
 	set var.temp = param.S
 if exists(param.D)
 	set var.dead = param.D
+
+; Keep D*K under 50 with margin; R/K high enough for ~235°C rise headroom
+var cool = 40 / var.dead
+var heat = var.cool * 4
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first (heaters off)." R"Too hot" S3
@@ -18,9 +24,9 @@ T0 P0
 M568 P0 S0 R0 A0
 
 ; Slow FGF model so M303 does not abort before the band reaches target
-M307 H1 R0.2 D{var.dead} S1.00 B0
+M307 H1 R{var.heat} K{var.cool}:0.000 D{var.dead} E1.35 S1.00 B0
 
-echo {"FGF band: M307 H1 D" ^ var.dead ^ " then M303 H1 S" ^ var.temp}
+echo {"FGF band: M307 H1 R" ^ var.heat ^ " K" ^ var.cool ^ " D" ^ var.dead ^ " then M303 H1 S" ^ var.temp}
 echo "Expect 15–40+ min — do not leave printer unattended"
 M291 P{"Band tune to " ^ var.temp ^ "°C. FGF barrel is slow (15–40+ min). Stay with the printer."} R"H1 tune" S1
 M303 H1 S{var.temp}

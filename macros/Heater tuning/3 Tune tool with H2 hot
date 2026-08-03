@@ -1,5 +1,7 @@
 ; Step 3: tune tool T0 (H1+H2 PID with fan model) while H2 (nozzle) is held hot.
 ; FGF dual-zone — expect a long run. Defaults 235°C. Override: M98 P"..." S235 N235 D120
+;
+; RRF requires deadTime * coolingRate <= 50.
 
 var temp = 235
 var nozzle = 235
@@ -12,6 +14,9 @@ if exists(param.N)
 if exists(param.D)
 	set var.dead = param.D
 
+var cool = 40 / var.dead
+var heat = var.cool * 4
+
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first." R"Too hot" S3
 	abort "Start from ambient"
@@ -19,8 +24,8 @@ if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 T0 P0
 M568 P0 S0 R0 A0
 
-M307 H1 R0.2 D{var.dead} S1.00 B0
-M307 H2 R0.4 D{var.dead} S1.00 B0
+M307 H1 R{var.heat} K{var.cool}:0.000 D{var.dead} E1.35 S1.00 B0
+M307 H2 R{var.heat} K{var.cool}:0.000 D{var.dead} E1.35 S1.00 B0
 
 G10 P0 S0:{var.nozzle} R0:{var.nozzle}
 

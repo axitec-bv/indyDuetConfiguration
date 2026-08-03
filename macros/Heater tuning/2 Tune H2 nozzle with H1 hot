@@ -1,6 +1,8 @@
 ; Step 2: tune H2 (nozzle) while H1 (band) is held at bandTemp.
 ; Simulates heat leaking from band → nozzle during real prints.
 ; FGF: band heat-soak is slow. Defaults 235°C. Override: M98 P"..." S235 B235 D90
+;
+; RRF requires deadTime * coolingRate <= 50.
 
 var nozzle = 235
 var band = 235
@@ -13,6 +15,9 @@ if exists(param.B)
 if exists(param.D)
 	set var.dead = param.D
 
+var cool = 40 / var.dead
+var heat = var.cool * 4
+
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 	M291 P"Cool both zones below 40°C first." R"Too hot" S3
 	abort "Start from ambient"
@@ -20,8 +25,7 @@ if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
 T0 P0
 M568 P0 S0 R0 A0
 
-; Allow slow approach while band is also heating
-M307 H2 R0.4 D{var.dead} S1.00 B0
+M307 H2 R{var.heat} K{var.cool}:0.000 D{var.dead} E1.35 S1.00 B0
 
 G10 P0 S{var.band}:0 R{var.band}:0
 
