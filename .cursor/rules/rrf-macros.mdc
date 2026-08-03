@@ -1,0 +1,48 @@
+---
+description: RepRapFirmware macro/meta-command gotchas (params, vars, GPIO)
+globs: macros/**/*,sys/**/*.g
+alwaysApply: false
+---
+
+# RRF macro / meta-command rules
+
+## Macro parameters are read-only
+
+`param.X` comes from `M98 … X…` (or DWC). **Never assign to it.**
+
+```gcode
+; BAD — Error: Bad command: param.S = 235
+if !exists(param.S)
+    param.S = 235
+
+; GOOD
+var temp = 235
+if exists(param.S)
+	set var.temp = param.S
+```
+
+Reserved / awkward M98 letters: **P** (filename) and **R** (restartable). Prefer other letters (S, B, D, N, …).
+
+## Locals use var / set
+
+```gcode
+var band = 235
+set var.band = param.B   ; only after exists(param.B)
+echo {var.band}
+M303 H1 S{var.temp}
+```
+
+## Daemon GPIO during long moves
+
+In `sys/daemon.g`, use expression form so the loop is not synced to the motion queue:
+
+```gcode
+M42 P{2} S{1}
+G4 P{200}
+```
+
+Not `M42 P2 S1` / `G4 S0.2`.
+
+## Dual-zone heater PID
+
+Tool 0 = H1 band + H2 nozzle. Tune from cold via `macros/Heater tuning/` **1 → 2 → 3**. Copy each Console `M307` into `config.g`. See README “Dual-zone extruder PID”.

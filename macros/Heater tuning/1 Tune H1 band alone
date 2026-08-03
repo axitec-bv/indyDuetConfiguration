@@ -1,21 +1,22 @@
 ; Step 1: tune H1 (band) alone — other zone cold.
 ; Default 235°C; pass S250 in Console to override: M98 P"..." S250
 
-if !exists(param.S)
-    param.S = 235
+var temp = 235
+if exists(param.S)
+	set var.temp = param.S
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
-    M291 P"Cool both zones below 40°C first (heaters off)." R"Too hot" S3
-    abort "Start from ambient"
+	M291 P"Cool both zones below 40°C first (heaters off)." R"Too hot" S3
+	abort "Start from ambient"
 
 T0 P0
 M568 P0 S0 R0 A0
 
-echo {"M303 H1 S" ^ param.S ^ " — band only, ~5–8 min"}
-M303 H1 S{param.S}
+echo {"M303 H1 S" ^ var.temp ^ " — band only, ~5–8 min"}
+M303 H1 S{var.temp}
 
 while heat.heaters[1].state = "tuning"
-    G4 S1
+	G4 S1
 
 echo "H1 tune done. Copy M307 H1 ... from Console into config.g"
 M568 P0 S0 R0 A0

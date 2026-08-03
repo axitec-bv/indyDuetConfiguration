@@ -2,25 +2,28 @@
 ; Simulates heat leaking from band → nozzle during real prints.
 ; Defaults: band=235 nozzle tune=235. Override: M98 P"..." S235 B235
 
-if !exists(param.S)
-    param.S = 235
-if !exists(param.B)
-    param.B = param.S
+var nozzle = 235
+var band = 235
+if exists(param.S)
+	set var.nozzle = param.S
+	set var.band = param.S
+if exists(param.B)
+	set var.band = param.B
 
 if heat.heaters[1].current > 40 || heat.heaters[2].current > 40
-    M291 P"Cool both zones below 40°C first." R"Too hot" S3
-    abort "Start from ambient"
+	M291 P"Cool both zones below 40°C first." R"Too hot" S3
+	abort "Start from ambient"
 
 T0 P0
 M568 P0 S0 R0 A0
-G10 P0 S{param.B}:0 R{param.B}:0
+G10 P0 S{var.band}:0 R{var.band}:0
 
-echo {"H1 band → " ^ param.B ^ "°C, tuning H2 to " ^ param.S ^ "°C"}
-echo {"M303 H2 S" ^ param.S}
-M303 H2 S{param.S}
+echo {"H1 band → " ^ var.band ^ "°C, tuning H2 to " ^ var.nozzle ^ "°C"}
+echo {"M303 H2 S" ^ var.nozzle}
+M303 H2 S{var.nozzle}
 
 while heat.heaters[2].state = "tuning"
-    G4 S1
+	G4 S1
 
 echo "H2 tune done. Copy M307 H2 ... from Console into config.g"
 M568 P0 S0 R0 A0

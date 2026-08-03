@@ -1,9 +1,10 @@
 ; Reset heater fault and turn tool heaters off (after overshoot trip).
 ; Param D = heater number (default 2 = nozzle).
 
-if !exists(param.D)
-    param.D = 2
+var heater = 2
+if exists(param.D)
+	set var.heater = param.D
 
-M562 H{param.D}
+M562 H{var.heater}
 M568 P0 S0 R0 A0
-M118 P0 L2 S{"Heater fault H" ^ param.D ^ " cleared — re-tune PID if overshoot repeats"}
+M118 P0 L2 S{"Heater fault H" ^ var.heater ^ " cleared — re-tune PID if overshoot repeats"}
