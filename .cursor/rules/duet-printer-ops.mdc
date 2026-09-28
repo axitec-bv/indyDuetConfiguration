@@ -64,3 +64,5 @@ Use `tools/motor_bringup.py` â€” factory address **123**, target addresses **70â
 `./bringup-sd.sh --name IndyprinterNN [--volume /Volumes/NO_LABEL] [--ip ...]`
 
 Keeps factory `firmware/` and `www/`; replaces `sys/` and `macros/`.
+
+Per-printer heater PID is **not** in git. Set Balena `H1_M307` / `H2_M307` as `R_K_Kf_D_E_S_B` digits (3 implied decimals, no dots/spaces), same rule as `STEPSX`. config-sync patches `M307 H1` / `M307 H2`. Reboot or `M999` after the sync.

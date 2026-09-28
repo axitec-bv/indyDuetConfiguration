@@ -39,5 +39,5 @@ while heat.heaters[1].state = "tuning" || heat.heaters[2].state = "tuning"
 
 M568 P0 S0 R0 A0
 
-echo "Tool tune finished (check Console for success vs cancelled). Copy M307 H1 and M307 H2 into config.g"
-M291 P"Check Console for M307 lines (or cancel message). Update config.g. Re-run 2→3 if values drift." R"T0 done" S1
+echo "Tool tune finished (check Console for success vs cancelled). Encode M307 lines into Balena H1_M307 / H2_M307 (R_K_Kf_D_E_S_B), then M999."
+M291 P"Check Console for M307 lines. Set encoded Balena H1_M307 / H2_M307, then M999. Re-run 2→3 if values drift." R"T0 done" S1

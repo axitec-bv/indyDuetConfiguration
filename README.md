@@ -63,4 +63,4 @@ DWC → **Heater tuning** macros (run from cold, in order; stay with the printer
 2. **Tune H2 nozzle with H1 hot** — band at print temp while nozzle autotunes
 3. **Tune tool with H2 hot** — both zones + fan model
 
-Copy each `M307` line from Console into `config.g`. Re-run steps 2–3 until values stabilise. **Clear heater fault** resets after an overshoot trip (`M562 H2`).
+Encode each Console `M307` line into Balena `H1_M307` / `H2_M307`. Encoding, worked examples, and apply steps: **[HEATER-PID-BALENA.md](HEATER-PID-BALENA.md)**. Re-run steps 2–3 until values stabilise. **Clear heater fault** resets after an overshoot trip (`M562 H2`).

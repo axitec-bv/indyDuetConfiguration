@@ -9,7 +9,8 @@
 ;   2) Tune H2 nozzle with H1 hot  (~20–45+ min)
 ;   3) Tune tool T0 with H2 hot    (~30–60+ min)
 ;
-; After each M303, copy the reported M307 line into config.g (or run config-sync).
+; After each M303, set Balena H1_M307 / H2_M307 as R_K_Kf_D_E_S_B
+; (3 implied decimals, no dots/spaces). Then M999.
 ; Repeat 2–3 until M307 values stabilise.
 ; If cancelled: retry with higher D, e.g. M98 P"0:/macros/Heater tuning/1 Tune H1 band alone" D180
 ;
@@ -22,5 +23,5 @@ echo "H1 = Bandheater (barrel)   H2 = Nozzle"
 echo "1) Tune H1 band alone"
 echo "2) Tune H2 nozzle with H1 hot"
 echo "3) Tune tool with H2 hot"
-echo "Start cold. Slow heat-up is normal. Copy M307 lines from Console into config.g."
+echo "Start cold. Slow heat-up is normal. Set Balena H1_M307 / H2_M307 from the Console M307 lines."
 M291 P"FGF: run 1→2→3 from cold. Band tune is slow (15–40+ min). Stay with printer." R"Dual-zone PID tune" S1

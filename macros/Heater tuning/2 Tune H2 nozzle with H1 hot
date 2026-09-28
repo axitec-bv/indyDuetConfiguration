@@ -48,5 +48,5 @@ elif heat.heaters[2].current < var.nozzle - 15
 	M291 P{"Likely cancelled — nozzle at " ^ heat.heaters[2].current ^ "°C. Check Console."} R"H2 failed?" S1
 	abort "H2 tune did not reach target"
 else
-	echo "H2 tune done. Copy M307 H2 ... from Console into config.g"
-	M291 P{"H2 done. Copy M307 H2 line. Next: 3 Tune tool with H2 hot."} R"H2 tuned" S1
+	echo "H2 tune done. Encode Console M307 H2 into Balena H2_M307 (R_K_Kf_D_E_S_B), then M999."
+	M291 P{"H2 done. Set Balena H2_M307 (encoded). Next: 3 Tune tool with H2 hot."} R"H2 tuned" S1

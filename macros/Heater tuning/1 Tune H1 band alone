@@ -45,5 +45,5 @@ elif heat.heaters[1].current < var.temp - 15
 	M291 P{"Likely cancelled — band at " ^ heat.heaters[1].current ^ "°C. Retry with D180 if Console said target not reached."} R"H1 failed?" S1
 	abort "H1 tune did not reach target"
 else
-	echo "H1 tune done. Copy M307 H1 ... from Console into config.g"
-	M291 P{"H1 done. Copy M307 H1 line. Next: 2 Tune H2 with H1 hot."} R"H1 tuned" S1
+	echo "H1 tune done. Encode Console M307 H1 into Balena H1_M307 (R_K_Kf_D_E_S_B), then M999."
+	M291 P{"H1 done. Set Balena H1_M307 (encoded). Next: 2 Tune H2 with H1 hot."} R"H1 tuned" S1

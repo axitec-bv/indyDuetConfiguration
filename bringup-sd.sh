@@ -36,6 +36,9 @@ Optional:
 
 Keeps factory firmware/ and www/. Replaces sys/ and macros/ from this repo,
 then patches hostname (and IP/subnet) in config.g.
+
+Heater PID is per printer via Balena H1_M307 / H2_M307 (config-sync),
+not files in this repo.
 EOF
 }
 

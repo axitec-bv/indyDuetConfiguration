@@ -4,6 +4,7 @@ Indy Duet SD bring-up
 Use a factory Duet SD card. The script keeps firmware/ and www/, then
 installs this repo's sys/ and macros/, and sets the printer hostname.
 Every printer uses the same IP (192.168.100.100) behind its own router.
+Heater PID is per printer via Balena H1_M307 / H2_M307 (config-sync).
 
 1. Insert the factory SD card (usually mounts as /Volumes/NO_LABEL).
 2. From this repo:
