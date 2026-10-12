@@ -1,0 +1,3 @@
+; Set water-cooling target (°C). Daemon turns pump on when inlet > global.waterTemp.
+set global.waterTemp = 90
+echo {"Water cooling setpoint → " ^ global.waterTemp ^ "°C"}
