@@ -65,6 +65,8 @@ while !fileexists("/sys/daemon.g.bak")
         global canCheckCounter = 0
     if !exists(global.canBoardsOffline)
         global canBoardsOffline = ""
+    if !exists(global.canCheckAbort)
+        global canCheckAbort = false
     set global.canCheckCounter = global.canCheckCounter + 1
     if global.canCheckCounter >= 25
         set global.canCheckCounter = 0
