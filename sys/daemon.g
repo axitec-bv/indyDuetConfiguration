@@ -60,6 +60,21 @@ while !fileexists("/sys/daemon.g.bak")
         set global.signalForceFault = false
     set global.lastHeaterFaultActive = global.heaterFaultActive
 
+    ; Boards that never came online (expansion-timeout only covers drop-after-seen)
+    if !exists(global.canCheckCounter)
+        global canCheckCounter = 0
+    if !exists(global.canBoardsOffline)
+        global canBoardsOffline = ""
+    set global.canCheckCounter = global.canCheckCounter + 1
+    if global.canCheckCounter >= 25
+        set global.canCheckCounter = 0
+        set global.canCheckAbort = false
+        M98 P"check-can.g"
+        if global.canBoardsOffline != ""
+            M118 P0 L1 S{"CAN boards offline:" ^ global.canBoardsOffline}
+        ; end if
+    ; end if
+
     ; Track job lifecycle: processing -> idle means "print finished / remove product"
     if state.status == "processing" || state.status == "resuming"
         set global.wasPrinting = true
@@ -68,13 +83,13 @@ while !fileexists("/sys/daemon.g.bak")
         set global.printFinished = true
         set global.wasPrinting = false
 
-    ; signalForceFault = latched faults (stall, CAN loss, manual test); heaterFaultActive = live
+    ; signalForceFault = latched faults (stall, CAN loss, manual test); heater/CAN missing = live
     ; 1 Hz = 0.5s on/off via upTime*2; 0.5 Hz = 1s on/off via upTime
-    if (global.signalForceFault || global.heaterFaultActive) && !(state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming")
+    if (global.signalForceFault || global.heaterFaultActive || global.canBoardsOffline != "") && !(state.status == "processing" || state.status == "paused" || state.status == "pausing" || state.status == "resuming")
         ; Not printing + fault: solid red (machine unavailable)
         M42 P{2} S{0}
         M42 P{4} S{1}
-    elif global.signalForceFault || global.heaterFaultActive || state.status == "paused" || state.status == "pausing"
+    elif global.signalForceFault || global.heaterFaultActive || global.canBoardsOffline != "" || state.status == "paused" || state.status == "pausing"
         ; Problem during a job: flash red @ 1 Hz
         M42 P{2} S{0}
         if mod(floor(state.upTime * 2), 2) = 0

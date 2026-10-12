@@ -111,6 +111,9 @@ global calMoveXy = 100
 global calExpected = 0
 global calX0 = 0
 global calY0 = 0
+global canCheckAbort = true
+global canBoardsOffline = ""
+global canCheckCounter = 0
 
 ; Signal lights: green flash @ 0.5 Hz once daemon.g runs (boot sets green on briefly)
 M42 P2 S1
@@ -118,3 +121,7 @@ M42 P4 S0
 
 ; Miscellaneous
 T0 ; select first tool
+
+; Fail loud if any expected CAN board never came online (see also expansion-timeout.g)
+set global.canCheckAbort = true
+M98 P"check-can.g"
